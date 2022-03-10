@@ -1,0 +1,7 @@
+apiVersion: my.domain/v1alpha1
+kind: Fetchdata
+metadata:
+  name: fetchdata-sample
+spec:
+  # Add fields here
+  foo: bar
