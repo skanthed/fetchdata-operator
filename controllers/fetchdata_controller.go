@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -47,9 +48,17 @@ type FetchdataReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.9.2/pkg/reconcile
 func (r *FetchdataReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	l := log.FromContext(ctx)
 
-	// your logic here
+	l.Info("Enter reconcile", "req", req)
+	Fetchdata := &mydomainv1alpha1.Fetchdata{}
+	//err := r.Get(ctx, types.NamespacedName, Fetchdata)
+
+	r.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, Fetchdata)
+
+	//l.Info("Inside reconcile", "error", err)
+
+	l.Info("Name value", "Name", Fetchdata.Spec, "status", Fetchdata.Status)
 
 	return ctrl.Result{}, nil
 }

@@ -36,7 +36,7 @@ spec:
           spec:
             description: FetchdataSpec defines the desired state of Fetchdata
             properties:
-              foo:
+              Name:
                 description: Foo is an example field of Fetchdata. Edit fetchdata_types.go
                   to remove/update
                 type: string

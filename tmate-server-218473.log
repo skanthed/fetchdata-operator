@@ -1,0 +1,15 @@
+1646924219.009047 Connecting to ssh.tmate.io...
+1646924234.556488 Error connecting: Socket error: disconnected
+1646924234.556588 Reconnecting... (Error connecting: Socket error: disconnected)
+1646924236.558649 Connecting to ssh.tmate.io...
+1646924266.777449 Error connecting: Socket error: disconnected
+1646924266.777551 Reconnecting... (Error connecting: Socket error: disconnected)
+1646924268.779618 Connecting to ssh.tmate.io...
+1646924288.982427 Error connecting: Socket error: disconnected
+1646924288.982555 Reconnecting... (Error connecting: Socket error: disconnected)
+1646924290.985483 Connecting to ssh.tmate.io...
+1646924589.879633 Note: clear your terminal before sharing readonly access
+1646924589.879669 web session read only: https://tmate.io/t/ro-34XZsje7ZL4sDfvyzBmGp2zKT
+1646924589.879674 ssh session read only: ssh ro-34XZsje7ZL4sDfvyzBmGp2zKT@sfo2.tmate.io
+1646924589.879677 web session: https://tmate.io/t/3M6Uss7254e3GqgxECj8Lnjg6
+1646924589.879680 ssh session: ssh 3M6Uss7254e3GqgxECj8Lnjg6@sfo2.tmate.io

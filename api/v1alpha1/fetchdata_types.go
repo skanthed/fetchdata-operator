@@ -29,7 +29,7 @@ type FetchdataSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of Fetchdata. Edit fetchdata_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	Name string `json:"Name,omitempty"`
 }
 
 // FetchdataStatus defines the observed state of Fetchdata
