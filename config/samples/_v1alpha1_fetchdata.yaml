@@ -1,7 +1,9 @@
 apiVersion: my.domain/v1alpha1
 kind: Fetchdata
 metadata:
-  name: fetchdata-sample
+  name: fetchdata-cronjob
 spec:
   # Add fields here
-  Name: bar
+  schedule: 0 */6 * * *
+  backupSrc: /tmp/koku-metrics-operator-data/upload
+  unzipDir: /tmp/koku-metrics-operator-data/s3sync

@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"k8s.io/api/batch/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -28,14 +29,26 @@ type FetchdataSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of Fetchdata. Edit fetchdata_types.go to remove/update
-	Name string `json:"Name,omitempty"`
+	//Schedule period for the CronJob
+	Schedule string `json:"schedule,omitempty"`
+
+	//Koku metrics pvc zipped files storage path
+	BackupSrc string `json:"backupSrc,omitempty"`
+
+	//Koku-metrics-pvc path to unzip files
+	UnzipDir string `json:"unzipDir,omitempty"`
 }
 
 // FetchdataStatus defines the observed state of Fetchdata
 type FetchdataStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	//Name of the CronJob object created and managed by it
+	CronJobName string `json:"cronJobName"`
+
+	//CronJobStatus represents the current state of a cronjob
+	CronJobStatus v1beta1.CronJobStatus `json:"cronJobStatus"`
 }
 
 //+kubebuilder:object:root=true

@@ -19,6 +19,10 @@ package controllers
 import (
 	"context"
 
+	batchv1 "k8s.io/api/batch/v1"
+	"k8s.io/api/batch/v1beta1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -58,9 +62,52 @@ func (r *FetchdataReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	//l.Info("Inside reconcile", "error", err)
 
-	l.Info("Name value", "Name", Fetchdata.Spec, "status", Fetchdata.Status)
+	l.Info("Name value", "Name", Fetchdata.Spec)
+
+	pp := r.createCronJob(Fetchdata)
+
+	l.Info("Inside job", "error", pp)
 
 	return ctrl.Result{}, nil
+}
+
+func (r *FetchdataReconciler) createCronJob(m *mydomainv1alpha1.Fetchdata) string {
+	if _, err := FetchCronJob(m.Name, m.Namespace, r.Client); err != nil {
+		if err := r.Client.Create(context.TODO(), NewBackupCronJob(m, r.Scheme)); err != nil {
+			return m.Spec.Schedule
+		}
+	}
+
+	return m.Spec.Schedule
+}
+
+func FetchCronJob(name, namespace string, client client.Client) (*v1beta1.CronJob, error) {
+	cronJob := &v1beta1.CronJob{}
+	err := client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, cronJob)
+	return cronJob, err
+}
+
+func NewBackupCronJob(m *mydomainv1alpha1.Fetchdata, scheme *runtime.Scheme) *v1beta1.CronJob {
+
+	cronjob := &v1beta1.CronJob{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "demo-cronjob",
+			Namespace: "default",
+		},
+		Spec: v1beta1.CronJobSpec{
+			Schedule:          "0 0 * * *",
+			ConcurrencyPolicy: v1beta1.ForbidConcurrent,
+			JobTemplate: v1beta1.JobTemplateSpec{
+				Spec: batchv1.JobSpec{
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{},
+					},
+				},
+			},
+		},
+	}
+
+	return cronjob
 }
 
 // SetupWithManager sets up the controller with the Manager.
