@@ -18,9 +18,10 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	batchv1 "k8s.io/api/batch/v1"
-	"k8s.io/api/batch/v1beta1"
+	//"k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -71,44 +72,79 @@ func (r *FetchdataReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	return ctrl.Result{}, nil
 }
 
-func (r *FetchdataReconciler) createCronJob(m *mydomainv1alpha1.Fetchdata) string {
+func (r *FetchdataReconciler) createCronJob(m *mydomainv1alpha1.Fetchdata) (string, error) {
 	if _, err := FetchCronJob(m.Name, m.Namespace, r.Client); err != nil {
 		if err := r.Client.Create(context.TODO(), NewBackupCronJob(m, r.Scheme)); err != nil {
-			return m.Spec.Schedule
+			fmt.Println("Create method ", err)
+			return m.Spec.Schedule, nil
 		}
 	}
 
-	return m.Spec.Schedule
+	return m.Spec.Schedule, nil
 }
 
-func FetchCronJob(name, namespace string, client client.Client) (*v1beta1.CronJob, error) {
-	cronJob := &v1beta1.CronJob{}
+func FetchCronJob(name, namespace string, client client.Client) (*batchv1.CronJob, error) {
+	cronJob := &batchv1.CronJob{}
 	err := client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, cronJob)
+	fmt.Println("Cronjob value ", cronJob, err)
 	return cronJob, err
 }
 
-func NewBackupCronJob(m *mydomainv1alpha1.Fetchdata, scheme *runtime.Scheme) *v1beta1.CronJob {
+func NewBackupCronJob(m *mydomainv1alpha1.Fetchdata, scheme *runtime.Scheme) *batchv1.CronJob {
+	cronjob := &batchv1.CronJob{
+	TypeMeta: metav1.TypeMeta{
+		Kind: "Cronjob",
+	},
+	ObjectMeta: metav1.ObjectMeta{
+		Name: "test-job",
+		Namespace: "default",
+	},
+	Spec: batchv1.CronJobSpec{
+		ConcurrencyPolicy: "Forbid",
+		Schedule: "0 */6 * * *",
+		JobTemplate: batchv1.JobTemplateSpec{
+			Spec: batchv1.JobSpec{
+				Template: corev1.PodTemplateSpec{
+					Spec: corev1.PodSpec{
+						Volumes: []corev1.Volume{
+							corev1.Volume{
+								Name: "koku-metrics-operator-data",
+								VolumeSource: corev1.VolumeSource{
+									PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+										ClaimName: "koku-metrics-operator-data",
+									},
+								},
+							},
+						},
+						Containers: []corev1.Container{
+							corev1.Container{
+								Name: "s3sync",
+								Image: "quay.io/operate-first/curator-s3-sync:latest",
+								VolumeMounts: []corev1.VolumeMount{
+									corev1.VolumeMount{
+										Name: "koku-metrics-operator-data",
+										MountPath: "/tmp/koku-metrics-operator-data",
+									},
+								},
 
-	cronjob := &v1beta1.CronJob{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "demo-cronjob",
-			Namespace: "default",
-		},
-		Spec: v1beta1.CronJobSpec{
-			Schedule:          "0 0 * * *",
-			ConcurrencyPolicy: v1beta1.ForbidConcurrent,
-			JobTemplate: v1beta1.JobTemplateSpec{
-				Spec: batchv1.JobSpec{
-					Template: corev1.PodTemplateSpec{
-						Spec: corev1.PodSpec{},
+							},
+						},
+						RestartPolicy: "Never",
+						},
+					
 					},
+
+
 				},
+
 			},
 		},
+	},
+	return cronjob
+
 	}
 
-	return cronjob
-}
+	
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *FetchdataReconciler) SetupWithManager(mgr ctrl.Manager) error {
