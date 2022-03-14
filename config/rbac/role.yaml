@@ -9,6 +9,32 @@ rules:
 - apiGroups:
   - batch
   resources:
+  - cronjobs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - batch
+  resources:
+  - cronjobs/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - batch
+  resources:
+  - cronjobs/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - batch
+  resources:
   - jobs
   verbs:
   - create
@@ -24,32 +50,6 @@ rules:
   - jobs/status
   verbs:
   - get
-- apiGroups:
-  - batch.tutorial.kubebuilder.io
-  resources:
-  - cronjobs
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - batch.tutorial.kubebuilder.io
-  resources:
-  - cronjobs/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - batch.tutorial.kubebuilder.io
-  resources:
-  - cronjobs/status
-  verbs:
-  - get
-  - patch
-  - update
 - apiGroups:
   - my.domain
   resources:
