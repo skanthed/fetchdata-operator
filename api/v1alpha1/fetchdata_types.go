@@ -29,6 +29,9 @@ type FetchdataSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
+	//Namespace in which cron job is created
+	CronjobNamespace string `json:"cronjobNamespace,omitempty"`
+
 	//Schedule period for the CronJob
 	Schedule string `json:"schedule,omitempty"`
 

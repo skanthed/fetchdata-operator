@@ -18,8 +18,11 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/go-logr/logr"
 	batchv1 "k8s.io/api/batch/v1"
+
 	//"k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,6 +49,9 @@ type FetchdataReconciler struct {
 //+kubebuilder:rbac:groups=batch,resources=cronjobs/finalizers,verbs=update
 //+kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=batch,resources=jobs/status,verbs=get
+//+kubebuilder:rbac:groups="core",resources=persistentvolumeclaims,verbs=get;watch;list;create;update;delete
+//+kubebuilder:rbac:groups="core",resources=persistentvolumeclaims,verbs=get;watch;list
+//+kubebuilder:rbac:groups="core",resources=persistentvolumeclaims/status,verbs=get;update;patch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -59,37 +65,49 @@ type FetchdataReconciler struct {
 func (r *FetchdataReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	l := log.FromContext(ctx)
 
-	l.Info("Enter reconcile", "req", req)
 	Fetchdata := &mydomainv1alpha1.Fetchdata{}
-	//err := r.Get(ctx, types.NamespacedName, Fetchdata)
 
-	r.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, Fetchdata)
+	err := r.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, Fetchdata)
 
-	//l.Info("Inside reconcile", "error", err)
-
-	//l.Info("Specification from crds", "Specification", Fetchdata.Spec)
-
-	createjob, err := r.createCronJob(Fetchdata)
+	r.createCronJob(Fetchdata)
 
 	if err != nil {
+		l.Info("Error", "error", err)
 		return ctrl.Result{}, err
 	}
 
-	l.Info("Inside job", "error", createjob)
+	checkpvc := r.reconcilePVC(ctx, Fetchdata, l)
+
+	l.Info("PVC Check", "error", checkpvc)
 
 	return ctrl.Result{}, nil
 }
 
-func (r *FetchdataReconciler) createCronJob(m *mydomainv1alpha1.Fetchdata) (string, error) {
+func (r *FetchdataReconciler) createCronJob(m *mydomainv1alpha1.Fetchdata) error {
 	if _, err := FetchCronJob(m.Name, m.Namespace, r.Client); err != nil {
-		//fmt.Println("Inside fetch cronjob ", err)
+		fmt.Println("Cronjob if exists ", err)
 		if err := r.Client.Create(context.TODO(), NewCronJob(m, r.Scheme)); err != nil {
-			//fmt.Println("Create method ", err)
-			return m.Spec.Schedule, nil
+			fmt.Println("Cronjob status ", err)
+			return err
 		}
 	}
+	return nil
+}
 
-	return m.Spec.Schedule, nil
+func (r *FetchdataReconciler) reconcilePVC(ctx context.Context, volume *mydomainv1alpha1.Fetchdata, l logr.Logger) error {
+
+	pvc := &corev1.PersistentVolumeClaim{}
+
+	err := r.Get(ctx, types.NamespacedName{Name: volume.Name, Namespace: volume.Namespace}, pvc)
+
+	if err == nil {
+		l.Info("PVC Found", err)
+		return nil
+	} else {
+		l.Info("PVC not found")
+		return err
+	}
+
 }
 
 func FetchCronJob(name, namespace string, client client.Client) (*batchv1.CronJob, error) {
@@ -100,14 +118,13 @@ func FetchCronJob(name, namespace string, client client.Client) (*batchv1.CronJo
 }
 
 func NewCronJob(m *mydomainv1alpha1.Fetchdata, scheme *runtime.Scheme) *batchv1.CronJob {
-	//fmt.Println("Name and Namespace", m.Namespace, m.Name)
 	cronjob := &batchv1.CronJob{
 		TypeMeta: metav1.TypeMeta{
 			Kind: "Cronjob",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      m.Name,
-			Namespace: "fetchdata-operator-system",
+			Namespace: m.Spec.CronjobNamespace,
 		},
 		Spec: batchv1.CronJobSpec{
 			ConcurrencyPolicy: "Forbid",
@@ -129,7 +146,8 @@ func NewCronJob(m *mydomainv1alpha1.Fetchdata, scheme *runtime.Scheme) *batchv1.
 							Containers: []corev1.Container{
 								corev1.Container{
 									Name:  "s3sync",
-									Image: "quay.io/operate-first/curator-s3-sync:latest",
+									Image: "quay.io/operate-first/fetchdata:latest",
+									// Command: []string{} Not executing it. As I can't pass value to controller . Need to save zipped files somewhere
 									VolumeMounts: []corev1.VolumeMount{
 										corev1.VolumeMount{
 											Name:      "koku-metrics-operator-data",

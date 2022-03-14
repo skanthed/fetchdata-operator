@@ -4,6 +4,7 @@ metadata:
   name: fetchdata-cronjob
 spec:
   # Add fields here
+  cronjobNamespace: koku-metrics-operator
   schedule: 0 */6 * * *
   backupSrc: /tmp/koku-metrics-operator-data/upload
   unzipDir: /tmp/koku-metrics-operator-data/s3sync

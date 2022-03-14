@@ -39,6 +39,9 @@ spec:
               backupSrc:
                 description: Koku metrics pvc zipped files storage path
                 type: string
+              cronjobNamespace:
+                description: Namespace in which cron job is created
+                type: string
               schedule:
                 description: Schedule period for the CronJob
                 type: string
