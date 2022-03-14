@@ -41,6 +41,11 @@ type FetchdataReconciler struct {
 //+kubebuilder:rbac:groups=my.domain,resources=fetchdata,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=my.domain,resources=fetchdata/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=my.domain,resources=fetchdata/finalizers,verbs=update
+//+kubebuilder:rbac:groups=batch.tutorial.kubebuilder.io,resources=cronjobs,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=batch.tutorial.kubebuilder.io,resources=cronjobs/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=batch.tutorial.kubebuilder.io,resources=cronjobs/finalizers,verbs=update
+//+kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=batch,resources=jobs/status,verbs=get
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -70,7 +75,7 @@ func (r *FetchdataReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	}
 
-	//l.Info("Inside job", "error", createjob)
+	l.Info("Inside job", "error", createjob)
 
 	return ctrl.Result{}, nil
 }
