@@ -18,13 +18,12 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/go-logr/logr"
 	batchv1 "k8s.io/api/batch/v1"
 
 	//"k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -62,62 +61,47 @@ type FetchdataReconciler struct {
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.9.2/pkg/reconcile
+
 func (r *FetchdataReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	l := log.FromContext(ctx)
 
 	Fetchdata := &mydomainv1alpha1.Fetchdata{}
 
 	err := r.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, Fetchdata)
-
-	r.createCronJob(Fetchdata)
-
 	if err != nil {
-		l.Info("Error", "error", err)
-		return ctrl.Result{}, err
+		if errors.IsNotFound(err) {
+			// Request object not found, could have been deleted after reconcile request.
+			l.Info("Fetchdata resource not found. Ignoring since object must be deleted.")
+			return ctrl.Result{}, nil
+		}
 	}
 
-	checkpvc := r.reconcilePVC(ctx, Fetchdata, l)
-
-	l.Info("PVC Check", "error", checkpvc)
+	if err := r.createCronJob(Fetchdata); err != nil {
+		l.Info("Failed to create the CronJob", err)
+		return ctrl.Result{}, err
+	}
 
 	return ctrl.Result{}, nil
 }
 
 func (r *FetchdataReconciler) createCronJob(m *mydomainv1alpha1.Fetchdata) error {
 	if _, err := FetchCronJob(m.Name, m.Namespace, r.Client); err != nil {
-		fmt.Println("Cronjob if exists ", err)
 		if err := r.Client.Create(context.TODO(), NewCronJob(m, r.Scheme)); err != nil {
-			fmt.Println("Cronjob status ", err)
 			return err
 		}
 	}
+
 	return nil
-}
-
-func (r *FetchdataReconciler) reconcilePVC(ctx context.Context, volume *mydomainv1alpha1.Fetchdata, l logr.Logger) error {
-
-	pvc := &corev1.PersistentVolumeClaim{}
-
-	err := r.Get(ctx, types.NamespacedName{Name: volume.Name, Namespace: volume.Namespace}, pvc)
-
-	if err == nil {
-		l.Info("PVC Found", err)
-		return nil
-	} else {
-		l.Info("PVC not found")
-		return err
-	}
-
 }
 
 func FetchCronJob(name, namespace string, client client.Client) (*batchv1.CronJob, error) {
 	cronJob := &batchv1.CronJob{}
 	err := client.Get(context.TODO(), types.NamespacedName{Name: name, Namespace: namespace}, cronJob)
-	//fmt.Println("Cronjob value ", cronJob, err)
 	return cronJob, err
 }
 
 func NewCronJob(m *mydomainv1alpha1.Fetchdata, scheme *runtime.Scheme) *batchv1.CronJob {
+	//fmt.Println("Name and Namespace", m.Namespace, m.Name)
 	cronjob := &batchv1.CronJob{
 		TypeMeta: metav1.TypeMeta{
 			Kind: "Cronjob",
@@ -134,7 +118,7 @@ func NewCronJob(m *mydomainv1alpha1.Fetchdata, scheme *runtime.Scheme) *batchv1.
 					Template: corev1.PodTemplateSpec{
 						Spec: corev1.PodSpec{
 							Volumes: []corev1.Volume{
-								corev1.Volume{
+								{
 									Name: "koku-metrics-operator-data",
 									VolumeSource: corev1.VolumeSource{
 										PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
@@ -144,12 +128,43 @@ func NewCronJob(m *mydomainv1alpha1.Fetchdata, scheme *runtime.Scheme) *batchv1.
 								},
 							},
 							Containers: []corev1.Container{
-								corev1.Container{
-									Name:  "s3sync",
-									Image: "quay.io/operate-first/fetchdata:latest",
-									// Command: []string{} Not executing it. As I can't pass value to controller . Need to save zipped files somewhere
+								{
+									Name:  "crdunzip",
+									Image: "docker.io/surbhi0129/crd_unzip:latest",
+									Env: []corev1.EnvVar{
+										{
+											Name:  "BACKUP_SRC",
+											Value: m.Spec.BackupSrc,
+										},
+										{
+											Name:  "UNZIP_DIR",
+											Value: m.Spec.UnzipDir,
+										},
+										{
+											Name:  "DATABASE_NAME",
+											Value: m.Spec.DatabaseName,
+										},
+										{
+											Name:  "DATABASE_USER",
+											Value: m.Spec.DatabaseUser,
+										},
+										{
+											Name:  "DATABASE_PASSWORD",
+											Value: m.Spec.DatabasePassword,
+										},
+										{
+											Name:  "DATABASE_HOST_NAME",
+											Value: m.Spec.DatabaseHostName,
+										},
+										{
+											Name:  "PORT_NUMBER",
+											Value: m.Spec.DatabasePort,
+										},
+									},
+									Command: []string{"python3"},
+									Args:    []string{"scripts/unzip_backup.py"},
 									VolumeMounts: []corev1.VolumeMount{
-										corev1.VolumeMount{
+										{
 											Name:      "koku-metrics-operator-data",
 											MountPath: "/tmp/koku-metrics-operator-data",
 										},

@@ -40,6 +40,21 @@ type FetchdataSpec struct {
 
 	//Koku-metrics-pvc path to unzip files
 	UnzipDir string `json:"unzipDir,omitempty"`
+
+	// Value for the Database Name Environment Variable
+	DatabaseName string `json:"databaseName,omitempty"`
+
+	//Value for the Database Password Environment Variable
+	DatabasePassword string `json:"databasePassword,omitempty"`
+
+	// Value for the Database User Environment Variable
+	DatabaseUser string `json:"databaseUser,omitempty"`
+
+	// Value for the Database HostName Environment Variable
+	DatabaseHostName string `json:"databaseHostName,omitempty"`
+
+	// Value for the Database Environment Variable in order to define the port which it should use. It will be used in its container as well
+	DatabasePort string `json:"databasePort,omitempty"`
 }
 
 // FetchdataStatus defines the observed state of Fetchdata

@@ -42,6 +42,23 @@ spec:
               cronjobNamespace:
                 description: Namespace in which cron job is created
                 type: string
+              databaseHostName:
+                description: Value for the Database HostName Environment Variable
+                type: string
+              databaseName:
+                description: Value for the Database Name Environment Variable
+                type: string
+              databasePassword:
+                description: Value for the Database Password Environment Variable
+                type: string
+              databasePort:
+                description: Value for the Database Environment Variable in order
+                  to define the port which it should use. It will be used in its container
+                  as well
+                type: string
+              databaseUser:
+                description: Value for the Database User Environment Variable
+                type: string
               schedule:
                 description: Schedule period for the CronJob
                 type: string
